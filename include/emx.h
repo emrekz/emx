@@ -216,7 +216,7 @@ EMX *EMX_Mul(int n, ...) {
 }
 
 EMX *EMX_Transpose(EMX *mtx) {
-  EMX *T = EMX_Generate(mtx->row, mtx->column, NULL);
+  EMX *T = EMX_Generate(mtx->column, mtx->row, NULL);
   for (int r = 0; r < mtx->row; r++) {
     for (int c = 0; c < mtx->column; c++) {
       T->addr[r + c * T->column] = mtx->addr[c + r * mtx->column];
