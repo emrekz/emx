@@ -39,6 +39,9 @@ EMX *EMX_Mul_Pair(EMX *mtx1, EMX *mtx2);  // Multiple two matrix and return poin
 EMX *EMX_Mul(int n, ...);  // Multiple two or more number of matrix
 EMX *EMX_Transpose(EMX *mtx);  // Give transpose of a matrix
 bool EMX_CheckSquareMatrix(EMX *mtx);
+EMX *EMX_GetMinorElement(EMX *mtx, int indexR, int indexC);  // Get minor of selected element
+emx_t EMX_Determinant(EMX *mtx);  // Get determinant of a matrix
+void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det);  // Helper function for determinant
 
 emx_t *_EMX_GetVector(int size) {
   return (emx_t *)malloc(size * sizeof(emx_t));
@@ -227,6 +230,58 @@ bool EMX_CheckSquareMatrix(EMX *mtx) {
   }
 }
 
+/// @param mtx address of matrix 
+/// @param indexR row index of element
+/// @param indexC column index of element
+EMX *EMX_GetMinorElement(EMX *mtx, int indexR, int indexC) {
+  EMX *M = EMX_Generate(mtx->row - 1, mtx->column - 1, NULL);
+  int t = 0;
+  for(int r = 0; r < mtx->row; r++) {
+    if(r == indexR) continue;
+    for(int c = 0; c < mtx->column; c++) {
+      if(c == indexC) continue;
+      M->addr[t] = mtx->addr[c + r * mtx->column];
+      t++;
+    }
+  }
+  return M;
+}
+
+emx_t EMX_Determinant(EMX *mtx) {
+  int _det = 0;
+  int _min = 1;
+  emx_t *det = &_det;
+  emx_t *min = &_min;
+  _EMX_DeterminantHelper(mtx, min, det);
+  return *det;
+}
+
+void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det) {
+  emx_t mtmp = 0;
+  EMX *M;
+  if(mtx->row == 2 && mtx->column == 2) {
+    *det *= (mtx->addr[0] * mtx->addr[3] - mtx->addr[1] * mtx->addr[2]);
+  } else {
+    for(int c = 0; c < mtx->column; c++) {
+      M = EMX_GetMinorElement(mtx, 0, c);
+      if(c % 2 == 1) *min *= -1;
+      *min *= mtx->addr[c];
+      if(M->row == 2 && M->column == 2) {
+        mtmp = (M->addr[0] * M->addr[3] - M->addr[1] * M->addr[2]);
+        *min *= mtmp;
+        *det += *min;
+        *min /= mtmp;
+        *min /= mtx->addr[c];
+        if(c % 2 == 1) *min *= -1;
+      } else {
+        _EMX_DeterminantHelper(M, min, det);
+        EMX_Free(M);
+        if(c % 2 == 1) *min *= -1;
+        *min /= mtx->addr[c];
+      }
+    }
+  }
+}
 
 void EMX_Free(EMX *mtx) {
   if(mtx) {
