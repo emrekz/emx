@@ -42,6 +42,10 @@ bool EMX_CheckSquareMatrix(EMX *mtx);
 EMX *EMX_GetMinorElement(EMX *mtx, int indexR, int indexC);  // Get minor of selected element
 emx_t EMX_Determinant(EMX *mtx);  // Get determinant of a matrix
 void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det);  // Helper function for determinant
+EMX *EMX_CofactorMatrix(EMX *mtx);  // Get cofactor of a matrix
+emx_t EMX_CofactorElement(EMX *mtx, int indexR, int indexC);  // Get a cofactor of a selected element
+EMX *EMX_AdjointMatrix(EMX *mtx);  // Get adjoint matrix
+
 
 emx_t *_EMX_GetVector(int size) {
   return (emx_t *)malloc(size * sizeof(emx_t));
@@ -213,12 +217,18 @@ EMX *EMX_Mul(int n, ...) {
 }
 
 EMX *EMX_Transpose(EMX *mtx) {
-  EMX *T = EMX_Generate(mtx->column, mtx->row, NULL);
-  for(int r = 0; r < mtx->row; r++) {
-    for(int c = 0; c < mtx->column; c++) {
-      T->addr[r + c * T->column] = mtx->addr[c + r * mtx->column];
+  EMX *T = NULL;
+  if(mtx) {
+    T = EMX_Generate(mtx->column, mtx->row, NULL);
+    for(int r = 0; r < mtx->row; r++) {
+      for(int c = 0; c < mtx->column; c++) {
+        T->addr[r + c * T->column] = mtx->addr[c + r * mtx->column];
+      }
     }
+  } else {
+    printf("ERROR: Transpose of NULL Matrix !\n");
   }
+  
   return T;
 }
 
@@ -260,7 +270,9 @@ void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det) {
   emx_t mtmp = 0;
   EMX *M;
   if(mtx->row == 2 && mtx->column == 2) {
-    *det *= (mtx->addr[0] * mtx->addr[3] - mtx->addr[1] * mtx->addr[2]);
+    *det = (mtx->addr[0] * mtx->addr[3] - mtx->addr[1] * mtx->addr[2]);
+  } else if(mtx->row == 1 && mtx->column == 1) {
+    *det = mtx->addr[0];
   } else {
     for(int c = 0; c < mtx->column; c++) {
       M = EMX_GetMinorElement(mtx, 0, c);
@@ -281,6 +293,38 @@ void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det) {
       }
     }
   }
+}
+
+EMX *EMX_CofactorMatrix(EMX *mtx) {
+  EMX *tmp = NULL;
+  if(EMX_CheckSquareMatrix(mtx)) {
+    tmp = EMX_Generate(mtx->row, mtx->column, NULL);
+    EMX *M;
+    emx_t det;
+    for(int r = 0; r < mtx->row; r++) {
+      for(int c = 0; c < mtx->column; c++) {
+        det = EMX_CofactorElement(mtx, r, c);
+        EMX_SetValue(tmp, r, c, det);
+      }
+    }
+  } else {
+    printf("ERROR: MATRIX MUST BE SQUARE MATRIX !\n");
+  }
+  return tmp;
+}
+
+emx_t EMX_CofactorElement(EMX *mtx, int indexR, int indexC) {
+  EMX *M;
+  emx_t det;
+  M = EMX_GetMinorElement(mtx, indexR, indexC);
+  det = EMX_Determinant(M);
+  EMX_Free(M);
+  if((indexR + indexC) % 2 == 1) det *= -1;
+  return det;
+}
+
+EMX *EMX_AdjointMatrix(EMX *mtx) {
+  return EMX_Transpose(EMX_CofactorMatrix(mtx));
 }
 
 void EMX_Free(EMX *mtx) {

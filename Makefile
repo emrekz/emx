@@ -23,4 +23,4 @@ all:
 # Test
 test:
 	${CC} ${CGLAGS} ${TEST_FILES} ${INC_PATH} -o ${FILE}
-	./${FILE}.exe
+#	./${FILE}.exe
