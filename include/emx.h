@@ -35,8 +35,8 @@ EMX *EMX_Add_Pair(EMX *mtx1, EMX *mtx2);  // Add two matrix and return pointer o
 EMX *EMX_Add(int n, ...);  // Add two or more number of matrix
 EMX *EMX_Sub_Pair(EMX *mtx1, EMX *mtx2);  // Subtract two matrix and return pointer of new matrix
 EMX *EMX_Sub(int n, ...);  // Subtract two or more number of matrix
-EMX *EMX_Mul_Pair(EMX *mtx1, EMX *mtx2);  // Multiple two matrix and return pointer of new matrix
-EMX *EMX_Mul(int n, ...);  // Multiple two or more number of matrix
+EMX *EMX_Mul_Pair(EMX *mtx1, EMX *mtx2);  // Multiply two matrix and return pointer of new matrix
+EMX *EMX_Mul(int n, ...);  // Multiply two or more number of matrix
 EMX *EMX_Transpose(EMX *mtx);  // Give transpose of a matrix
 bool EMX_CheckSquareMatrix(EMX *mtx);
 EMX *EMX_GetMinorElement(EMX *mtx, int indexR, int indexC);  // Get minor of selected element
@@ -45,7 +45,9 @@ void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det);  // Helper functi
 EMX *EMX_CofactorMatrix(EMX *mtx);  // Get cofactor of a matrix
 emx_t EMX_CofactorElement(EMX *mtx, int indexR, int indexC);  // Get a cofactor of a selected element
 EMX *EMX_AdjointMatrix(EMX *mtx);  // Get adjoint matrix
-
+EMX *EMX_GenerateConstantMatrix(int indexR, int indexC, emx_t val);  // Generete constant(homogeneous) matrix
+EMX *EMX_ScalerMul(EMX *mtx, emx_t val);  // Get scaler multiplication of matrix
+EMX *EMX_Inverse(EMX *mtx);  // Get inverse of matrix
 
 emx_t *_EMX_GetVector(int size) {
   return (emx_t *)malloc(size * sizeof(emx_t));
@@ -220,6 +222,9 @@ EMX *EMX_Transpose(EMX *mtx) {
   EMX *T = NULL;
   if(mtx) {
     T = EMX_Generate(mtx->column, mtx->row, NULL);
+    T->row = mtx->row;
+    T->column = mtx->column;
+    T->size = T->row * T->column;
     for(int r = 0; r < mtx->row; r++) {
       for(int c = 0; c < mtx->column; c++) {
         T->addr[r + c * T->column] = mtx->addr[c + r * mtx->column];
@@ -258,8 +263,8 @@ EMX *EMX_GetMinorElement(EMX *mtx, int indexR, int indexC) {
 }
 
 emx_t EMX_Determinant(EMX *mtx) {
-  int _det = 0;
-  int _min = 1;
+  emx_t _det = 0;
+  emx_t _min = 1;
   emx_t *det = &_det;
   emx_t *min = &_min;
   _EMX_DeterminantHelper(mtx, min, det);
@@ -325,6 +330,45 @@ emx_t EMX_CofactorElement(EMX *mtx, int indexR, int indexC) {
 
 EMX *EMX_AdjointMatrix(EMX *mtx) {
   return EMX_Transpose(EMX_CofactorMatrix(mtx));
+}
+
+/// @param indexR row count of matrix
+/// @param indexC column count of matrix
+/// @param val value for fill in matrix
+/// @return 
+EMX *EMX_GenerateConstantMatrix(int indexR, int indexC, emx_t val) {
+  EMX *mtx = (EMX *)malloc(sizeof(EMX));
+  mtx->row = indexR;
+  mtx->column = indexC;
+  mtx->size = mtx->row * mtx->column;
+  mtx->addr = _EMX_GetVector(mtx->size);
+  for(int r = 0; r < indexR; r++) {
+    for(int c = 0; c < indexC; c++) {
+      EMX_SetValue(mtx, r, c, val);      
+    }
+  }
+  return mtx;
+}
+
+/// @param mtx address of matrix
+/// @param val scaler value
+EMX *EMX_ScalerMul(EMX *mtx, emx_t val) {
+  EMX *sca = EMX_Generate(mtx->row, mtx->column, NULL);
+  for(int r = 0; r < mtx->row; r++) {
+    for(int c = 0; c < mtx->column; c++) {
+      sca->addr[c + r * sca->column] = mtx->addr[c + r * mtx->column] * val;  
+    }
+  }
+  return sca;
+}
+
+EMX *EMX_Inverse(EMX *mtx) {
+  EMX *adj = EMX_AdjointMatrix(mtx);
+  emx_t det = EMX_Determinant(mtx);
+  det = 1 / det;
+  EMX *inv = EMX_ScalerMul(adj, det);
+  EMX_Free(adj);
+  return inv;
 }
 
 void EMX_Free(EMX *mtx) {
