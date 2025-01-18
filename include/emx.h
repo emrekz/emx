@@ -9,11 +9,11 @@
 #define TAB_SIZE  2
 
 #ifndef EMX_USE_DOUBLE_DATA
-typedef int emx_t;
-#define EMX_PRINT_SPEC "%d"
+  typedef int emx_t;
+  #define EMX_PRINT_SPEC "%d"
 #else 
-typedef double emx_t;
-#define EMX_PRINT_SPEC "%f"
+  typedef double emx_t;
+  #define EMX_PRINT_SPEC "%f"
 #endif
 
 typedef struct {
@@ -285,16 +285,18 @@ void _EMX_DeterminantHelper(EMX *mtx, emx_t *min, emx_t *det) {
       *min *= mtx->addr[c];
       if(M->row == 2 && M->column == 2) {
         mtmp = (M->addr[0] * M->addr[3] - M->addr[1] * M->addr[2]);
-        *min *= mtmp;
-        *det += *min;
-        *min /= mtmp;
-        *min /= mtx->addr[c];
+        if(mtmp) {
+          *min *= mtmp;
+          *det += *min;
+          *min /= mtmp;
+        }
+        if(mtx->addr[c]) *min /= mtx->addr[c];
         if(c % 2 == 1) *min *= -1;
       } else {
         _EMX_DeterminantHelper(M, min, det);
         EMX_Free(M);
         if(c % 2 == 1) *min *= -1;
-        *min /= mtx->addr[c];
+        if(mtx->addr[c]) *min /= mtx->addr[c];
       }
     }
   }
@@ -365,7 +367,7 @@ EMX *EMX_ScalerMul(EMX *mtx, emx_t val) {
 EMX *EMX_Inverse(EMX *mtx) {
   EMX *adj = EMX_AdjointMatrix(mtx);
   emx_t det = EMX_Determinant(mtx);
-  det = 1 / det;
+  if(det) det = 1 / det;
   EMX *inv = EMX_ScalerMul(adj, det);
   EMX_Free(adj);
   return inv;
